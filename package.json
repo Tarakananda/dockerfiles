@@ -15,12 +15,16 @@
     "recharts": "^2.10.0"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "@testing-library/jest-dom": "^6.1.5",
     "@testing-library/react": "^14.1.2",
     "@testing-library/user-event": "^14.5.1",
     "eslint": "^8.57.1",
     "eslint-config-react-app": "^7.0.1",
-    "react-scripts": "5.0.1"
+    "eslint-plugin-react": "^7.37.5",
+    "globals": "^17.14.0",
+    "react-scripts": "5.0.1",
+    "typescript-eslint": "^8.73.0"
   },
   "scripts": {
     "start": "react-scripts start",
