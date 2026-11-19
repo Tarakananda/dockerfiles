@@ -1,4 +1,5 @@
 import React from 'react';
+import PropTypes from 'prop-types';
 import { Box, Card, CardContent, Grid, Typography, Avatar } from '@mui/material';
 import { useQuery } from 'react-query';
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
@@ -52,6 +53,15 @@ function StatCard({ title, value, color, subtitle, icon, bgColor }) {
     </Card>
   );
 }
+
+StatCard.propTypes = {
+  title: PropTypes.string.isRequired,
+  value: PropTypes.oneOfType([PropTypes.number, PropTypes.string]).isRequired,
+  color: PropTypes.string,
+  subtitle: PropTypes.string,
+  icon: PropTypes.node,
+  bgColor: PropTypes.string,
+};
 
 export default function Dashboard() {
   const { data: drugs, isLoading: drugsLoading } = useQuery('drugs', () => api.get('/drugs').then(r => r.data), { retry: false });
