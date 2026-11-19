@@ -28,6 +28,34 @@
     "test": "react-scripts test --coverage --watchAll=false",
     "lint": "eslint src/"
   },
+  "eslintConfig": {
+    "extends": [
+      "react-app",
+      "react-app/jest"
+    ],
+    "rules": {
+      "no-console": [
+        "warn",
+        {
+          "allow": [
+            "warn",
+            "error"
+          ]
+        }
+      ],
+      "no-unused-vars": [
+        "warn",
+        {
+          "argsIgnorePattern": "^_"
+        }
+      ],
+      "prefer-const": "error",
+      "no-var": "error",
+      "react/prop-types": "warn",
+      "react/no-unused-state": "warn",
+      "react/jsx-no-duplicate-props": "error"
+    }
+  },
   "jest": {
     "collectCoverageFrom": [
       "src/**/*.{js,jsx}",
