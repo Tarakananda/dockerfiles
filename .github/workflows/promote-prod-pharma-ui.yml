@@ -29,7 +29,7 @@ jobs:
         with:
           repository: ${{ env.GITOPS_REPO }}
           token: ${{ secrets.GITOPS_TOKEN }}
-          path: _gitops
+          path: _helmchats
 
       - name: Install yq
         run: |
@@ -39,7 +39,7 @@ jobs:
 
       - name: Validate QA values file exists
         run: |
-          QA_VALUES="_gitops/envs/qa/values-pharma-ui.yaml"
+          QA_VALUES="_helmchats/envs/qa/values-pharma-ui.yaml"
           if [[ ! -f "$QA_VALUES" ]]; then
             echo "::error::QA values file not found: ${QA_VALUES}"
             echo "::error::Cannot determine which image is running in QA."
@@ -59,7 +59,7 @@ jobs:
 
       - name: Validate PROD values file exists
         run: |
-          PROD_VALUES="_gitops/envs/prod/values-pharma-ui.yaml"
+          PROD_VALUES="_helmchats/envs/prod/values-pharma-ui.yaml"
           if [[ ! -f "$PROD_VALUES" ]]; then
             echo "::error::PROD values file not found: ${PROD_VALUES}"
             exit 1
@@ -77,7 +77,7 @@ jobs:
         run: |
           BRANCH="promote/prod/pharma-ui/${IMAGE_TAG}"
 
-          cd _gitops
+          cd _helmchats
           git checkout -b "$BRANCH"
           yq e ".image.tag = \"${IMAGE_TAG}\"" -i "${PROD_VALUES}"
           git config user.name  "github-actions[bot]"

@@ -27,7 +27,7 @@ jobs:
         with:
           repository: ${{ env.GITOPS_REPO }}
           token: ${{ secrets.GITOPS_TOKEN }}
-          path: _gitops
+          path: _helmchats
 
       - name: Install yq
         run: |
@@ -37,7 +37,7 @@ jobs:
 
       - name: Validate DEV values file exists
         run: |
-          DEV_VALUES="_gitops/envs/dev/values-pharma-ui.yaml"
+          DEV_VALUES="_helmchats/envs/dev/values-pharma-ui.yaml"
           if [[ ! -f "$DEV_VALUES" ]]; then
             echo "::error::DEV values file not found: ${DEV_VALUES}"
             echo "::error::Cannot determine which image is running in DEV."
@@ -64,7 +64,7 @@ jobs:
           RUN_ID: ${{ github.run_id }}
           GITOPS_REPO_NAME: ${{ env.GITOPS_REPO }}
         run: |
-          VALUES="_gitops/envs/qa/values-pharma-ui.yaml"
+          VALUES="_helmchats/envs/qa/values-pharma-ui.yaml"
           BRANCH="promote/qa/pharma-ui/${IMAGE_TAG}"
 
           if [[ ! -f "$VALUES" ]]; then
@@ -72,7 +72,7 @@ jobs:
             exit 0
           fi
 
-          cd _gitops
+          cd _helmchats
           git checkout -b "$BRANCH"
           yq e ".image.tag = \"${IMAGE_TAG}\"" -i "envs/qa/values-pharma-ui.yaml"
           git config user.name  "github-actions[bot]"
