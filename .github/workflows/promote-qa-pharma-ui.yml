@@ -85,15 +85,14 @@ jobs:
         run: |
           VALUES="_helmchats/envs/qa/values-pharma-ui.yaml"
           VALUES_API="_helmchats/envs/qa/values-api-gateway.yaml"
-          BRANCH="promote/qa/pharma-ui/${IMAGE_TAG}"
-          BRANCH_API="promote/qa/api-gateway/${IMAGE_TAG_API}"
+          BRANCH="promote/qa/pharma-ui/${IMAGE_TAG}/api-gateway/${IMAGE_TAG_API}"
 
           if [[ ! -f "$VALUES" ]]; then
             echo "::warning::$VALUES not found — QA PR skipped."
             exit 0
           fi
           if [[ ! -f "$VALUES_API" ]]; then
-            echo "::warning::$VALUES not found — QA PR skipped."
+            echo "::warning::$VALUES_API not found — QA PR skipped."
             exit 0
           fi
           cd _helmchats
