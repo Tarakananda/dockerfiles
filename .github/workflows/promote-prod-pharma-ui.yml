@@ -103,40 +103,27 @@ jobs:
           RUN_ID: ${{ github.run_id }}
           GITOPS_REPO_NAME: ${{ env.GITOPS_REPO }}
         run: |
-          BRANCH="promote/prod/pharma-ui/${IMAGE_TAG}"
-          BRANCH_API="promote/prod/api-gateway/${IMAGE_TAG_API}"
+          BRANCH="promote/prod/ui-gateway/${RUN_ID}-${GITHUB_RUN_ATTEMPT}"
 
           cd _helmchats
           git checkout -b "$BRANCH"
           yq e ".image.tag = \"${IMAGE_TAG}\"" -i "${PROD_VALUES}"
+          yq e '.image.tag = strenv(IMAGE_TAG_API)' -i "$PROD_VALUES_API"
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add .
+          git add -- "$PROD_VALUES" "$PROD_VALUES_API"
           if git diff --staged --quiet; then
-            echo "::notice::PROD already has image ${IMAGE_TAG} — no PR needed."
+            echo "::notice::Both PROD image tags already match QA."
             exit 0
           fi
-          git commit -m "promote(prod): pharma-ui → ${IMAGE_TAG}"
+          git commit -m "promote(prod): pharma-ui ${IMAGE_TAG}, api-gateway ${IMAGE_TAG_API}"
           git push origin "$BRANCH"
-          
-          cd _helmchats
-          git checkout -b "$BRANCH_API"
-          yq e ".image.tag = \"${IMAGE_TAG_API}\"" -i "${PROD_VALUES_API}"
-          git config user.name  "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add .
-          if git diff --staged --quiet; then
-            echo "::notice::PROD already has image ${IMAGE_TAG_API} — no PR needed."
-            exit 0
-          fi
-          git commit -m "promote(prod): pharma-ui → ${IMAGE_TAG_API}"
-          git push origin "$BRANCH_API"
 
           printf '%s\n' \
             "## PROD Promotion" \
             "" \
-            "Service : pharma-ui" \
-            "Image   : ${IMAGE_TAG}" \
+            "pharma-ui : ${IMAGE_TAG}" \
+            "api-gateway : ${IMAGE_TAG_API}" \
             "Promoted from QA by : ${ACTOR}" \
             "Workflow run : ${SERVER_URL}/${REPOSITORY}/actions/runs/${RUN_ID}" \
             "" \
@@ -150,11 +137,11 @@ jobs:
             "ArgoCD app \`pharma-prod/pharma-ui\` is configured for **manual sync**." \
             "After merging, trigger sync in ArgoCD and monitor the rollout." \
             "" \
-            "Merging this PR updates ${PROD_VALUES}." > /tmp/pr-body.md
+            "Merging this PR promotes the QA tags for pharma-ui and api-gateway." > /tmp/pr-body.md
 
           gh pr create \
             --repo "$GITOPS_REPO_NAME" \
-            --title "promote(prod): pharma-ui → ${IMAGE_TAG}" \
+            --title "promote(prod): pharma-ui ${IMAGE_TAG}, api-gateway ${IMAGE_TAG_API}" \
             --body-file /tmp/pr-body.md \
             --base main \
             --head "$BRANCH"
