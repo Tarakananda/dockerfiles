@@ -44,7 +44,16 @@ jobs:
             exit 1
           fi
           echo "DEV_VALUES=${DEV_VALUES}" >> "$GITHUB_ENV"
-
+      - name: Validate DEV values file exists 1
+        run: |
+          DEV_VALUES_API="_helmchats/envs/dev/values-api-gateway.yaml"
+          if [[ ! -f "$DEV_VALUES_API" ]]; then
+            echo "::error::DEV values file not found: ${DEV_VALUES_API}"
+            echo "::error::Cannot determine which image is running in DEV."
+            exit 1
+          fi
+          echo "DEV_VALUES_API=${DEV_VALUES_API}" >> "$GITHUB_ENV"
+      
       - name: Read image tag from DEV
         run: |
           IMAGE_TAG=$(yq e '.image.tag' "$DEV_VALUES")
@@ -54,6 +63,16 @@ jobs:
           fi
           echo "IMAGE_TAG=${IMAGE_TAG}" >> "$GITHUB_ENV"
           echo "Promoting image: ${IMAGE_TAG}"
+      
+      - name: Read image tag from DEV
+        run: |
+          IMAGE_TAG_API=$(yq e '.image.tag' "$DEV_VALUES_API")
+          if [[ -z "$IMAGE_TAG_API" || "$IMAGE_TAG_API" == "null" ]]; then
+            echo "::error::Could not read .image.tag from $DEV_VALUES_API"
+            exit 1
+          fi
+          echo "IMAGE_TAG_API=${IMAGE_TAG_API}" >> "$GITHUB_ENV"
+          echo "Promoting image: ${IMAGE_TAG_API}"
 
       - name: Create branch, commit, open PR
         env:
@@ -65,16 +84,22 @@ jobs:
           GITOPS_REPO_NAME: ${{ env.GITOPS_REPO }}
         run: |
           VALUES="_helmchats/envs/qa/values-pharma-ui.yaml"
+          VALUES_API="_helmchats/envs/qa/values-api-gateway.yaml"
           BRANCH="promote/qa/pharma-ui/${IMAGE_TAG}"
+          BRANCH_API="promote/qa/api-gateway/${IMAGE_TAG_API}"
 
           if [[ ! -f "$VALUES" ]]; then
             echo "::warning::$VALUES not found — QA PR skipped."
             exit 0
           fi
-
+          if [[ ! -f "$VALUES_API" ]]; then
+            echo "::warning::$VALUES not found — QA PR skipped."
+            exit 0
+          fi
           cd _helmchats
           git checkout -b "$BRANCH"
           yq e ".image.tag = \"${IMAGE_TAG}\"" -i "envs/qa/values-pharma-ui.yaml"
+          yq e ".image.tag = \"${IMAGE_TAG_API}\"" -i "envs/qa/values-api-gateway.yaml"
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add .
