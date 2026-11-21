@@ -46,6 +46,15 @@ jobs:
             exit 1
           fi
           echo "QA_VALUES=${QA_VALUES}" >> "$GITHUB_ENV"
+      - name: Validate QA values file exists 1  
+        run: |
+          QA_API_VALUES="_helmchats/envs/qa/values-api-gateway.yaml"
+          if [[ ! -f "$QA_API_VALUES" ]]; then
+            echo "::error::QA values file not found: ${QA_API_VALUES}"
+            echo "::error::Cannot determine which image is running in QA."
+            exit 1
+          fi
+          echo "QA_API_VALUES=${QA_API_VALUES}" >> "$GITHUB_ENV"
 
       - name: Read image tag from QA
         run: |
@@ -56,7 +65,17 @@ jobs:
           fi
           echo "IMAGE_TAG=${IMAGE_TAG}" >> "$GITHUB_ENV"
           echo "Promoting image: ${IMAGE_TAG}"
-
+      
+      - name: Read image tag from QA_API
+        run: |
+          IMAGE_TAG_API=$(yq e '.image.tag' "$QA_API_VALUES")
+          if [[ -z "$IMAGE_TAG_API" || "$IMAGE_TAG_API" == "null" ]]; then
+            echo "::error::Could not read .image.tag from $QA_API_VALUES"
+            exit 1
+          fi
+          echo "IMAGE_TAG_API=${IMAGE_TAG_API}" >> "$GITHUB_ENV"
+          echo "Promoting image: ${IMAGE_TAG_API}"
+      
       - name: Validate PROD values file exists
         run: |
           PROD_VALUES="_helmchats/envs/prod/values-pharma-ui.yaml"
@@ -65,6 +84,15 @@ jobs:
             exit 1
           fi
           echo "PROD_VALUES=envs/prod/values-pharma-ui.yaml" >> "$GITHUB_ENV"
+
+      - name: Validate PROD values file exists
+        run: |
+          PROD_VALUES_API="_helmchats/envs/prod/values-api-gateway.yaml"
+          if [[ ! -f "$PROD_VALUES_API" ]]; then
+            echo "::error::PROD values file not found: ${PROD_VALUES_API}"
+            exit 1
+          fi
+          echo "PROD_VALUES_API=envs/prod/values-api-gateway.yaml" >> "$GITHUB_ENV"
 
       - name: Create branch, patch values, open PR
         env:
@@ -76,6 +104,7 @@ jobs:
           GITOPS_REPO_NAME: ${{ env.GITOPS_REPO }}
         run: |
           BRANCH="promote/prod/pharma-ui/${IMAGE_TAG}"
+          BRANCH_API="promote/prod/api-gateway/${IMAGE_TAG_API}"
 
           cd _helmchats
           git checkout -b "$BRANCH"
@@ -89,6 +118,19 @@ jobs:
           fi
           git commit -m "promote(prod): pharma-ui → ${IMAGE_TAG}"
           git push origin "$BRANCH"
+          
+          cd _helmchats
+          git checkout -b "$BRANCH_API"
+          yq e ".image.tag = \"${IMAGE_TAG_API}\"" -i "${PROD_VALUES_API}"
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add .
+          if git diff --staged --quiet; then
+            echo "::notice::PROD already has image ${IMAGE_TAG_API} — no PR needed."
+            exit 0
+          fi
+          git commit -m "promote(prod): pharma-ui → ${IMAGE_TAG_API}"
+          git push origin "$BRANCH_API"
 
           printf '%s\n' \
             "## PROD Promotion" \
