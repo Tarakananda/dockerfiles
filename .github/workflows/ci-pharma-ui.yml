@@ -127,7 +127,7 @@ jobs:
   Trivy-scan:
     name: Trivy Vulnerability Scan
     runs-on: ubuntu-latest
-    needs: test
+    needs: checkov-dockerfile-scan
     steps:
       - uses: actions/checkout@v5
 
@@ -139,7 +139,7 @@ jobs:
           trivy fs . \
             --format table \
             --severity HIGH,CRITICAL \
-            -- ignore-unfixed \
+            --ignore-unfixed \
             --exit-code 0 > trivy-results.txt
           
   # ── 4. Code Quality & Security (SonarCloud + npm audit) ──────────────────
