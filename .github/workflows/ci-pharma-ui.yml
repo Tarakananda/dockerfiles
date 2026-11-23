@@ -76,11 +76,74 @@ jobs:
           path: coverage/
           retention-days: 3
 
-  # ── 3. Code Quality & Security (SonarCloud + npm audit) ──────────────────
+  # ---- 2.1 gitleaks Scan for Secrets
+  gitleaks-scan:
+    name: Gitleaks Scan
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Run gitleaks scan
+        run: |
+          docker run --rm \
+            -v "${{github.workspace}}:/repo" \
+            zricethezav/gitleaks:latest detect \
+            --source /repo \
+            --report-format json \
+            --report-path gitleaks-report.json \
+            --redact
+            -- exit-code 0
+
+  # ---- 2.2 chekov Scan for Secrets
+  chekov-dockerfile-scan:
+    name: Chekov dockerfile Scan
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - uses: actions/checkout@v5
+      
+      - name: Setup python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+        
+      - name: Install chekov
+        run: pip install chekov
+
+      - name: Run chekov scan
+        run: checkov -d . \
+            --framework dockerfile \
+            --output json > chekov-dockerfile-report.json || true
+
+      - name: Upload chekov report
+        uses: actions/upload-artifact@v6
+        with:
+          name: chekov-dockerfile-report
+          path: chekov-dockerfile-report.json
+          if-no-files-found: warn
+
+  # ---- 3. Vulnerbility Scan using Trivy 
+  Trivy-scan:
+    name: Trivy Vulnerability Scan
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Scan with Trivy
+        run: |
+          trivy fs . \
+            --format table \
+            --severity HIGH,CRITICAL \
+            -- ignore-unfixed \
+            --exit-code 0 > trivy-results.txt
+          
+  # ── 4. Code Quality & Security (SonarCloud + npm audit) ──────────────────
   sonar:
     name: Code Quality & Security
     runs-on: ubuntu-latest
-    needs: test
+    needs: Trivy-scan
     steps:
       - uses: actions/checkout@v5
         with:
